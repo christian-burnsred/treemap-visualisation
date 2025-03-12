@@ -36,6 +36,16 @@ const NestedTreemap = ({
     // Define highlight color for interactive elements
     const HIGHLIGHT_COLOR = "#DD6B20";
 
+    // Define node category labels based on depth
+    const NODE_CATEGORIES = [
+        "Risk",
+        "Operating Context",
+        "Equipment Level 1",
+        "Equipment Level 2",
+        "Damaging Energy Mechanism",
+        "Scenario"
+    ];
+
     // Resize observer to make the treemap responsive
     useEffect(() => {
         if (!containerRef.current) return;
@@ -80,6 +90,43 @@ const NestedTreemap = ({
 
         // Clear previous content
         d3.select(svgRef.current).selectAll("*").remove();
+
+        // Check if the total value is 0 - display message if it is
+        if (currentRoot.value === 0) {
+            // Create the SVG container with increased header height for title
+            const headerHeight = 45;
+            const svg = d3.select(svgRef.current)
+                .attr("viewBox", [0, -headerHeight, width, height + headerHeight])
+                .attr("width", "100%")
+                .attr("height", "100%")
+                .style("font", "10px sans-serif");
+
+            // Add the main title group
+            const titleGroup = svg.append("g")
+                .attr("class", "title-group")
+                .attr("transform", `translate(0, -${headerHeight})`);
+
+            // Add the main title text
+            titleGroup.append("text")
+                .attr("x", 0)
+                .attr("y", 15)
+                .attr("font-size", "16px")
+                .attr("font-weight", "bold")
+                .attr("fill", HIGHLIGHT_COLOR)
+                .attr("class", "main-title")
+                .text(title);
+
+            // Add message for empty data
+            svg.append("text")
+                .attr("x", width / 2)
+                .attr("y", height / 2)
+                .attr("text-anchor", "middle")
+                .attr("font-size", "16px")
+                .attr("fill", "#666")
+                .text("Add at least one scenarios, operating context, and equipment to display the interactive model.");
+
+            return;
+        }
 
         // Color scale for different tree depths
         const color = d3.scaleSequential([0, 9], d3.interpolateOranges);
@@ -149,7 +196,7 @@ const NestedTreemap = ({
             .attr("class", "title-group")
             .attr("transform", `translate(0, -${headerHeight})`);
 
-        // Add the main title text (clickable for zooming out)
+        // Add the main title text
         titleGroup.append("text")
             .attr("x", 0)
             .attr("y", 15)
@@ -168,7 +215,18 @@ const NestedTreemap = ({
         const updateBreadcrumb = () => {
             pathContainer.selectAll("*").remove();
 
-            if (currentRoot === fullHierarchyRef.current) return;
+            if (currentRoot === fullHierarchyRef.current) {
+                // Add instructions when at the root level (no breadcrumb path)
+                pathContainer.append("text")
+                    .attr("x", 0)
+                    .attr("y", 0)
+                    .attr("font-size", "12px")
+                    .attr("fill", "#666")
+                    .attr("font-style", "italic")
+                    .text("Click on a node to navigate the model or hover on the node to show its category");
+
+                return;
+            }
 
             // Find path from root to current node
             const findPathToNode = (node: d3.HierarchyNode<TreemapData> | null, target: d3.HierarchyNode<TreemapData>, path: d3.HierarchyNode<TreemapData>[]) => {
@@ -260,8 +318,15 @@ const NestedTreemap = ({
 
         const format = d3.format(",d");
 
+        // Modified tooltip to only show the category
         node.append("title")
-            .text(d => `${d.ancestors().reverse().map(d => d.data.name).join("/")}\n${format(d.value || 0)}`);
+            .text(d => {
+                // Find the absolute depth of the node from the root of the full hierarchy
+                const absoluteDepth = d.depth;
+
+                // Get the corresponding category based on depth
+                return NODE_CATEGORIES[absoluteDepth] || "Category";
+            });
 
         // Add rectangles for each node with click behavior for zooming
         const zoomToNode = (d: TreemapNode) => {
@@ -309,7 +374,7 @@ const NestedTreemap = ({
 
         // Helper function to wrap text in SVG
         function wrapText(selection: d3.Selection<SVGTextElement, any, any, any>, width: number) {
-            selection.each(function() {
+            selection.each(function () {
                 const text = d3.select(this);
                 const words = text.text().split(/\s+/).reverse();
                 const lineHeight = 1.1; // ems
@@ -347,14 +412,11 @@ const NestedTreemap = ({
             .attr("clip-path", d => `url(#${d.clipId})`)
             .attr("x", 3)
             .attr("y", 13)
-            .attr("cursor", "pointer")
+            .attr("cursor", d => d.children ? "pointer" : "normal")
             .attr("font-weight", d => d.children ? "bold" : "normal")
             .text(d => {
                 // Check if this is a leaf node in the original hierarchy
                 const isActualLeafNode = !d.children && !d.data.children;
-
-                // Check if this is a node at the maximum visible depth
-                // const isAtMaxDepth = (d.depth - rootDepth) === maxDepth && d.children;
 
                 // For actual leaf nodes, just show the name
                 if (isActualLeafNode) {
@@ -364,7 +426,7 @@ const NestedTreemap = ({
                 // For all other nodes (parent nodes and nodes at max depth), show name with value
                 return `${d.data.name} (${format(d.value || 0)})`;
             })
-            .each(function(d) {
+            .each(function (d) {
                 // Apply text wrapping for leaf nodes and max depth nodes
                 const isAtMaxDepth = (d.depth - rootDepth) === maxDepth && d.children;
                 const isActualLeafNode = !d.children && !d.data.children;
