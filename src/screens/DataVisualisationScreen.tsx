@@ -74,7 +74,7 @@ const DataVisualisationScreen = () => {
         if (!isUpdatingFromTagRemoval) {
             setSelectedEquipmentData(equipment);
         }
-        // Reset the flag after the update
+        // Reset the flag after the updating
         setIsUpdatingFromTagRemoval(false);
     };
 
