@@ -12,6 +12,7 @@ interface TreemapData {
 interface TreemapNode extends d3.HierarchyRectangularNode<TreemapData> {
     nodeId: string;
     clipId: string;
+    absoluteDepth?: number; // Track absolute depth from original hierarchy
 }
 
 interface NestedTreemapProps {
@@ -71,6 +72,11 @@ const NestedTreemap = ({
         const hierarchy = d3.hierarchy(data)
             .sum(d => d.value || 0)
             .sort((a, b) => (b.value || 0) - (a.value || 0));
+
+        // Calculate and store absolute depth for each node
+        hierarchy.descendants().forEach(node => {
+            (node as TreemapNode).absoluteDepth = node.depth;
+        });
 
         fullHierarchyRef.current = hierarchy;
         setCurrentRoot(hierarchy);
@@ -135,6 +141,38 @@ const NestedTreemap = ({
         const currentHierarchy = d3.hierarchy(currentRoot.data)
             .sum(d => d.value || 0)
             .sort((a, b) => (b.value || 0) - (a.value || 0));
+
+        // Preserve the absolute depths from the original hierarchy
+        const preserveAbsoluteDepths = (node: d3.HierarchyNode<TreemapData>) => {
+            // Find matching node in the full hierarchy to get its absolute depth
+            const findMatchingNode = (searchNode: d3.HierarchyNode<TreemapData>, targetData: TreemapData): d3.HierarchyNode<TreemapData> | null => {
+                if (searchNode.data === targetData) {
+                    return searchNode;
+                }
+
+                if (searchNode.children) {
+                    for (const child of searchNode.children) {
+                        const result = findMatchingNode(child, targetData);
+                        if (result) return result;
+                    }
+                }
+
+                return null;
+            };
+
+            if (fullHierarchyRef.current) {
+                const matchingNode = findMatchingNode(fullHierarchyRef.current, node.data);
+                if (matchingNode) {
+                    (node as TreemapNode).absoluteDepth = (matchingNode as TreemapNode).absoluteDepth;
+                }
+            }
+
+            if (node.children) {
+                node.children.forEach(preserveAbsoluteDepths);
+            }
+        };
+
+        preserveAbsoluteDepths(currentHierarchy);
 
         // Create a treemap layout
         const treemap = d3.treemap<TreemapData>()
@@ -318,13 +356,13 @@ const NestedTreemap = ({
 
         const format = d3.format(",d");
 
-        // Modified tooltip to only show the category
+        // Modified tooltip to use absoluteDepth instead of depth
         node.append("title")
             .text(d => {
-                // Find the absolute depth of the node from the root of the full hierarchy
-                const absoluteDepth = d.depth;
+                // Use the absolute depth from the original hierarchy
+                const absoluteDepth = (d as TreemapNode).absoluteDepth || 0;
 
-                // Get the corresponding category based on depth
+                // Get the corresponding category based on absolute depth
                 return NODE_CATEGORIES[absoluteDepth] || "Category";
             });
 
