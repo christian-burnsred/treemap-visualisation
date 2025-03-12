@@ -2,13 +2,25 @@ import {Checkbox, CheckboxGroup, Flex, Tab, TabList, Tabs, Text, VStack} from "@
 
 interface ScenariosProps {
     setSelectedTab: (tab: string) => void;
+    selectedTab: string; // Add this prop to track the currently selected tab
     selectedScenarios: string[];
     setSelectedScenarios: (scenarios: string[]) => void;
     getScenariosByTab: () => string[];
 }
 
+const Scenarios = ({
+                       setSelectedTab,
+                       selectedTab,
+                       selectedScenarios,
+                       setSelectedScenarios,
+                       getScenariosByTab
+                   }: ScenariosProps) => {
+    // Function to get the tab index based on the selectedTab string
+    const getTabIndex = () => {
+        const tabNames = ['Vehicle to person', 'Vehicle to vehicle', 'Vehicle to environment'];
+        return tabNames.indexOf(selectedTab);
+    };
 
-const Scenarios = ({setSelectedTab, selectedScenarios, setSelectedScenarios, getScenariosByTab}: ScenariosProps) => {
     return (
         <>
             <Text fontSize="sm" fontWeight="bold" mb={4}>
@@ -16,11 +28,17 @@ const Scenarios = ({setSelectedTab, selectedScenarios, setSelectedScenarios, get
             </Text>
 
             <Flex width={'100%'}>
-                <Tabs variant='unstyled' width="100%" size={'sm'} mb={6} borderRadius="lg"
-                      onChange={(index) => {
-                          const tabNames = ['Vehicle to person', 'Vehicle to vehicle', 'Vehicle to environment'];
-                          setSelectedTab(tabNames[index]);
-                      }}
+                <Tabs
+                    variant='unstyled'
+                    width="100%"
+                    size={'sm'}
+                    mb={6}
+                    borderRadius="lg"
+                    index={getTabIndex()} // Set the initial tab index based on selectedTab
+                    onChange={(index) => {
+                        const tabNames = ['Vehicle to person', 'Vehicle to vehicle', 'Vehicle to environment'];
+                        setSelectedTab(tabNames[index]);
+                    }}
                 >
                     <TabList gap={2} width="100%">
                         <Tab _selected={{color: 'white', bg: 'orange.500'}} color={'white'} bg={"gray.300"} borderRadius="md" fontWeight="bold" p={4} flex="1" textAlign="center">

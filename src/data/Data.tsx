@@ -28,7 +28,7 @@ export const allDEMs = {
     'Vehicle to person': v2pScenarios,
     'Vehicle to vehicle': v2vScenarios,
     'Vehicle to environment': v2eScenarios
-};
+} as const;
 
 // Restructured equipment data to support hierarchical treemap without 'description'
 export const equipment = [
@@ -61,10 +61,10 @@ export const equipment = [
     },
 ];
 
-export const nonMiningEquipment = equipment;
-export const offsiteEquipment = equipment;
-export const surfaceEquipment = equipment;
-export const undergroundEquipment = equipment;
+const nonMiningEquipment = equipment;
+const offsiteEquipment = equipment;
+const surfaceEquipment = equipment;
+const undergroundEquipment = equipment;
 
 export const operatingContext = [
     {name: 'Non-mining onsite', children: nonMiningEquipment},
@@ -109,47 +109,77 @@ function mapEquipmentToDEMs() {
     }));
 }
 
+type DEMKey = keyof typeof allDEMs;
+
+interface EquipmentChild {
+    name: string;
+    selected?: boolean;
+}
+
+interface EquipmentItem {
+    name: string;
+    selected?: boolean;
+    children: EquipmentChild[];
+}
+
+interface Context {
+    name: string;
+    children: EquipmentItem[];
+}
+
 export function createStructuredRiskTitleData(
-    riskTitle,
-    selectedContexts,
-    selectedEquipmentData,
-    selectedScenarios
-) {
+    riskTitle: string,
+    selectedContexts: string[],
+    selectedEquipmentData: EquipmentItem[],
+    selectedScenarios: string[]
+): { name: string; children: Context[] } {
     return {
         name: riskTitle, // Root object name
         children: operatingContext
-            .filter(context => selectedContexts.includes(context.name)) // Filter selected contexts
-            .map(context => ({
+            .filter((context) => selectedContexts.includes(context.name)) // Filter selected contexts
+            .map((context) => ({
                 name: context.name, // Ensure context appears only once
                 children: context.children
-                    .filter(equip => selectedEquipmentData.some(item => item.name === equip.name && item.selected)) // Filter selected equipment
-                    .map(equip => ({
+                    .filter((equip) =>
+                        selectedEquipmentData.some(
+                            (item) => item.name === equip.name && item.selected
+                        )
+                    ) // Filter selected equipment
+                    .map((equip) => ({
                         name: equip.name,
                         children: equip.children
-                            .filter(subEquip =>
-                                selectedEquipmentData.some(parent =>
+                            .filter((subEquip) =>
+                                selectedEquipmentData.some((parent) =>
                                     parent.name === equip.name &&
-                                    parent.children.some(child => child.name === subEquip.name && child.selected)
+                                    parent.children.some(
+                                        (child) =>
+                                            child.name === subEquip.name && child.selected
+                                    )
                                 )
                             ) // Filter selected sub-equipment
-                            .map(subEquip => ({
+                            .map((subEquip) => ({
                                 name: subEquip.name,
                                 children: Object.entries(allDEMs) // Go through all DEMs
-                                    .filter(([dem]) =>
-                                        selectedScenarios.includes(dem) ||
-                                        allDEMs[dem].some(scenario => selectedScenarios.includes(scenario))
+                                    .filter(
+                                        ([dem]) =>
+                                            selectedScenarios.includes(dem as DEMKey) ||
+                                            allDEMs[dem as DEMKey].some((scenario) =>
+                                                selectedScenarios.includes(scenario)
+                                            )
                                     ) // Ensure selected DEMs
                                     .map(([dem, scenarios]) => ({
                                         name: dem,
                                         children: scenarios
-                                            .filter(scenario => selectedScenarios.includes(scenario)) // Only include selected scenarios
-                                            .map(scenario => ({
+                                            .filter((scenario) =>
+                                                selectedScenarios.includes(scenario)
+                                            ) // Only include selected scenarios
+                                            .map((scenario) => ({
                                                 name: scenario,
-                                                value: 1
-                                            }))
-                                    }))
-                            }))
-                    }))
-            }))
+                                                value: 1,
+                                            })),
+                                    })),
+                            })),
+                    })),
+            })),
     };
 }

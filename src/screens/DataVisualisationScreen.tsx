@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {
     Box,
     Flex,
@@ -18,12 +18,11 @@ import {
 import Scenarios from "../components/Scenarios.tsx";
 import {
     allDEMs,
-    sampleData,
     v2eScenarios,
     v2pScenarios,
     v2vScenarios,
     equipment,
-    createStructuredRiskTitleData
+    createStructuredRiskTitleData, operatingContext
 } from "../data/Data.tsx";
 import OperatingContext from "../components/OperatingContext.tsx";
 import EquipmentPicker, {EquipmentChild, EquipmentItem} from "../components/EquipmentPicker.tsx";
@@ -31,31 +30,27 @@ import NestedTreemap from "../components/NestedTreemap.tsx";
 
 
 const DataVisualisationScreen = () => {
-    const [selectedScenarios, setSelectedScenarios] = useState([
-        'Vehicle to person',
-        'Vehicle in control contacts person involved in the task',
-        'Vehicle in control contacts person not involved in the task',
-        'Vehicle not in control / moves unexpectedly contacting person including rollaway',
-        'Person in footprint of vehicle including rollaway',
-        'Merging, overtaking, path crossover, junction, intersection crossover',
-        'Head-on, dove tailing, rear end, blind approach',
-    ]);
+    const [selectedScenarios, setSelectedScenarios] = useState<string[]>(() =>
+        Object.values(allDEMs).flat() // Get all DEM scenarios
+    );
 
     // Add state for selected contexts
-    const [selectedContexts, setSelectedContexts] = useState<string[]>([]);
+    const [selectedContexts, setSelectedContexts] = useState<string[]>(() =>
+        operatingContext.map((context) => context.name) // Select all contexts
+    );
 
-    // Initialize equipment data from the imported equipment
-    const [selectedEquipmentData, setSelectedEquipmentData] = useState<EquipmentItem[]>(() => {
-        // Initialize equipment data with selected property
-        return equipment.map(item => ({
+    // Initialize equipment data with everything selected
+    const [selectedEquipmentData, setSelectedEquipmentData] = useState<EquipmentItem[]>(() =>
+        equipment.map((item) => ({
             name: item.name,
-            children: item.children.map(child => ({
+            selected: true, // Select parent equipment
+            children: item.children.map((child) => ({
                 name: child.name,
-                selected: false
-            })),
-            selected: false
-        }));
-    });
+                selected: true, // Select sub-equipment
+            }))
+        }))
+    );
+
 
     // Add state to track if equipment is being updated from tag removal
     const [isUpdatingFromTagRemoval, setIsUpdatingFromTagRemoval] = useState(false);
@@ -115,6 +110,12 @@ const DataVisualisationScreen = () => {
     const [selectedSelectYourTab, setSelectedSelectYourTab] = useState(0);
     const [selectedTab, setSelectedTab] = useState('Vehicle to person');
 
+    // Add this useEffect to preserve the selectedTab when returning to scenarios
+    useEffect(() => {
+        // This effect will run when selectedSelectYourTab changes to 0 (Scenarios tab)
+        // It does nothing but ensures we keep the current selectedTab value
+    }, [selectedSelectYourTab]);
+
     const getScenariosByTab = () => {
         switch (selectedTab) {
             case 'Vehicle to vehicle':
@@ -124,6 +125,11 @@ const DataVisualisationScreen = () => {
             default:
                 return v2pScenarios;
         }
+    };
+
+    // Create a function to handle scenario tab changes that updates the selectedTab state
+    const handleScenarioTabChange = (newTab: string) => {
+        setSelectedTab(newTab);
     };
 
     // Group selected scenarios by their DEM category
@@ -174,14 +180,14 @@ const DataVisualisationScreen = () => {
         return result;
     };
 
-    // FIXME - uncomment
     const riskTitle = "Vehicle Incident"
     const dynamicData = createStructuredRiskTitleData(riskTitle, selectedContexts, selectedEquipmentData, selectedScenarios)
+    // Uncomment for sample data
     // const dynamicData = sampleData
 
     return (
         <Box p={4} width="90vw">
-            <Box width={"100%"} height={"600px"} mb={20}>
+            <Box width={"100%"} height={"600px"} mb={10}>
                 <NestedTreemap data={dynamicData} maxDepth={3}/>
             </Box>
             <HStack justify="space-between" align="flex-start" width="100%">
@@ -347,7 +353,8 @@ const DataVisualisationScreen = () => {
             <Box height={"300px"}>
                 {selectedSelectYourTab === 0 &&
                     <Scenarios
-                        setSelectedTab={setSelectedTab}
+                        setSelectedTab={handleScenarioTabChange}
+                        selectedTab={selectedTab} // Add this to pass current tab to component
                         selectedScenarios={selectedScenarios}
                         setSelectedScenarios={setSelectedScenarios}
                         getScenariosByTab={getScenariosByTab}

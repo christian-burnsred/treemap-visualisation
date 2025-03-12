@@ -155,23 +155,9 @@ const NestedTreemap = ({
             .attr("y", 15)
             .attr("font-size", "16px")
             .attr("font-weight", "bold")
-            .attr("cursor", "pointer")
+            .attr("fill", HIGHLIGHT_COLOR)
             .attr("class", "main-title")
             .text(title)
-            .on("mouseover", function () {
-                d3.select(this).style("text-decoration", "underline");
-                d3.select(this).style("fill", HIGHLIGHT_COLOR);
-            })
-            .on("mouseout", function () {
-                d3.select(this).style("text-decoration", "none");
-                d3.select(this).style("fill", "#000");
-            })
-            .on("click", () => {
-                // When title is clicked, zoom out to root level
-                if (currentRoot !== fullHierarchyRef.current) {
-                    setCurrentRoot(fullHierarchyRef.current);
-                }
-            });
 
         // Add the path container for breadcrumb navigation
         const pathContainer = titleGroup.append("g")
