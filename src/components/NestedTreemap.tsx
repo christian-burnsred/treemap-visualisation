@@ -119,7 +119,7 @@ const NestedTreemap = ({
             titleGroup.append("text")
                 .attr("x", 0)
                 .attr("y", 15)
-                .attr("font-size", "16px")
+                .attr("font-size", "24px")
                 .attr("font-weight", "bold")
                 .attr("fill", HIGHLIGHT_COLOR)
                 .attr("class", "main-title")
@@ -132,7 +132,7 @@ const NestedTreemap = ({
                 .attr("text-anchor", "middle")
                 .attr("font-size", "16px")
                 .attr("fill", "#666")
-                .text("Add at least one scenarios, operating context, and equipment to display the interactive model.");
+                .text("Add at least one scenario, operating context, and equipment to display the interactive model.");
 
             return;
         }
