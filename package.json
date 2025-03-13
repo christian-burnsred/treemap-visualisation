@@ -2,11 +2,13 @@
   "name": "data-visualisation",
   "private": true,
   "version": "0.0.0",
+  "homepage": "https://christian-burnsred.github.io/treemap-visualisation/",
   "type": "module",
   "scripts": {
+    "predeploy" : "npm run build",
+    "deploy" : "gh-pages -d dist",
     "dev": "vite",
-    "build": "tsc -b && vite build",
-    "deploy": "gh-pages -d dist -b gh-pages --clean",
+    "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },

@@ -1,5 +1,6 @@
 import * as d3 from 'd3';
 import {useEffect, useRef, useState} from "react";
+import {Box} from "@chakra-ui/react";
 
 // Define a type for the data structure
 interface TreemapData {
@@ -18,7 +19,7 @@ interface TreemapNode extends d3.HierarchyRectangularNode<TreemapData> {
 interface NestedTreemapProps {
     data: TreemapData;
     title?: string;
-    maxDepth?: number; // New parameter to control display depth
+    maxDepth?: number;
 }
 
 const NestedTreemap = ({
@@ -55,8 +56,10 @@ const NestedTreemap = ({
             if (!entries.length) return;
 
             const {width, height} = entries[0].contentRect;
+            console.log(width)
+
             setDimensions({
-                width: Math.max(width, 100),  // Ensure minimum dimensions
+                width: Math.max(width*1.1, 100),  // Ensure minimum dimensions
                 height: Math.max(height, 100),
             });
         });
@@ -178,7 +181,7 @@ const NestedTreemap = ({
         const treemap = d3.treemap<TreemapData>()
             .size([width, height])
             .paddingOuter(3)
-            .paddingTop(19)
+            .paddingTop(24)
             .paddingInner(1)
             .round(true);
 
@@ -209,25 +212,12 @@ const NestedTreemap = ({
             }) as TreemapNode;
         });
 
-        // Create the SVG container with increased header height for title and navigation
         const headerHeight = 45;
         const svg = d3.select(svgRef.current)
             .attr("viewBox", [0, -headerHeight, width, height + headerHeight])
             .attr("width", "100%")
             .attr("height", "100%")
-            .style("font", "10px sans-serif");
-
-        // Create unique ID for shadow
-        const shadowId = `shadow-${Math.random().toString(36).substring(2, 11)}`;
-
-        // Add definitions for shadow filter
-        svg.append("defs")
-            .append("filter")
-            .attr("id", shadowId)
-            .append("feDropShadow")
-            .attr("flood-opacity", 0.3)
-            .attr("dx", 0)
-            .attr("stdDeviation", 3);
+            .style("font", "12px sans-serif");
 
         // Add the main title group
         const titleGroup = svg.append("g")
@@ -238,7 +228,7 @@ const NestedTreemap = ({
         titleGroup.append("text")
             .attr("x", 0)
             .attr("y", 15)
-            .attr("font-size", "16px")
+            .attr("font-size", "18px")
             .attr("font-weight", "bold")
             .attr("fill", HIGHLIGHT_COLOR)
             .attr("class", "main-title")
@@ -300,15 +290,14 @@ const NestedTreemap = ({
                     .attr("x", xOffset)
                     .attr("y", 0)
                     .attr("fill", "#666")
+                    .attr("text-decoration", "underline")
                     .attr("font-size", "12px")
                     .text(i === 0 ? ancestor.data.name : ancestor.data.name)
                     .attr("cursor", "pointer")
                     .on("mouseover", function () {
-                        d3.select(this).style("text-decoration", "underline");
                         d3.select(this).style("fill", HIGHLIGHT_COLOR);
                     })
                     .on("mouseout", function () {
-                        d3.select(this).style("text-decoration", "none");
                         d3.select(this).style("fill", "#666");
                     })
                     .on("click", () => {
@@ -338,7 +327,8 @@ const NestedTreemap = ({
         updateBreadcrumb();
 
         // Create a group for the treemap content
-        const contentGroup = svg.append("g");
+        const contentGroup = svg.append("g")
+            .attr("transform", "translate(0, 0)");
 
         // Group nodes by their depth
         const grouped = Array.from(d3.group(nodes, d => d.height));
@@ -351,7 +341,6 @@ const NestedTreemap = ({
             .data(d => d[1])
             .join("g")
             .attr("class", "node")
-            .attr("filter", `url(#${shadowId})`)
             .attr("transform", d => `translate(${d.x0},${d.y0})`);
 
         const format = d3.format(",d");
@@ -363,7 +352,7 @@ const NestedTreemap = ({
                 const absoluteDepth = (d as TreemapNode).absoluteDepth || 0;
 
                 // Get the corresponding category based on absolute depth
-                return NODE_CATEGORIES[absoluteDepth] || "Category";
+                return `${NODE_CATEGORIES[absoluteDepth]} - ${d.data.name}` || `${d.data.name}`;
             });
 
         // Add rectangles for each node with click behavior for zooming
@@ -448,22 +437,45 @@ const NestedTreemap = ({
         // Add text for nodes based on visibility and depth
         node.append("text")
             .attr("clip-path", d => `url(#${d.clipId})`)
-            .attr("x", 3)
-            .attr("y", 13)
+            .attr("x", 5)
+            .attr("y", 16)
             .attr("cursor", d => d.children ? "pointer" : "normal")
-            .attr("font-weight", d => d.children ? "bold" : "normal")
-            .text(d => {
+            .attr("font-weight", d => {
+                const isAtMaxDepth = (d.depth - rootDepth) === maxDepth && d.children;
+                const isActualLeafNode = !d.children && !d.data.children;
+                return (isActualLeafNode || isAtMaxDepth) ? "normal" : "bold";
+            })
+
+            .text(function (d) {
                 // Check if this is a leaf node in the original hierarchy
                 const isActualLeafNode = !d.children && !d.data.children;
+                const isAtMaxDepth = (d.depth - rootDepth) === maxDepth && d.children;
+                const nodeName = d.data.name;
+                const nodeValue = format(d.value || 0);
 
                 // For actual leaf nodes, just show the name
                 if (isActualLeafNode) {
-                    return `${d.data.name}`;
+                    return nodeName;
                 }
 
-                // For all other nodes (parent nodes and nodes at max depth), show name with value
-                return `${d.data.name} (${format(d.value || 0)})`;
+                if (!isAtMaxDepth) {
+                    // Calculate available width for text
+                    const availableWidth = Math.max(0, d.x1 - d.x0) - 16;
+                    const textElement = d3.select(this);
+                    textElement.text(nodeName);
+
+                    // Check if text would overflow
+                    if (this.getComputedTextLength() > availableWidth) {
+                        // Find position to truncate text
+                        const maxLength = Math.floor(nodeName.length * (availableWidth / this.getComputedTextLength())) - 4;
+                        return `${nodeName.substring(0, maxLength)}...(${nodeValue})`;
+                    }
+                }
+
+                // No overflow, display normally
+                return `${nodeName} (${nodeValue})`;
             })
+
             .each(function (d) {
                 // Apply text wrapping for leaf nodes and max depth nodes
                 const isAtMaxDepth = (d.depth - rootDepth) === maxDepth && d.children;
@@ -471,7 +483,7 @@ const NestedTreemap = ({
 
                 if (isActualLeafNode || isAtMaxDepth) {
                     // Calculate available width for wrapping
-                    const availableWidth = Math.max(0, d.x1 - d.x0) - 6; // 6px padding
+                    const availableWidth = Math.max(0, d.x1 - d.x0) - 10; // 6px padding
                     wrapText(d3.select(this), availableWidth);
                 }
             })
@@ -483,9 +495,9 @@ const NestedTreemap = ({
     }, [data, dimensions, currentRoot, title, maxDepth]); // Include maxDepth in dependencies
 
     return (
-        <div ref={containerRef} style={{width: '100%', height: '100%'}}>
+        <Box ref={containerRef} width={"100%"} height={"600px"} mb={10}>
             <svg ref={svgRef} style={{width: '100%', height: '100%'}}/>
-        </div>
+        </Box>
     );
 };
 

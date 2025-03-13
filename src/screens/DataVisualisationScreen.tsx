@@ -187,9 +187,7 @@ const DataVisualisationScreen = () => {
 
     return (
         <Box p={4} width="90vw">
-            <Box width={"100%"} height={"600px"} mb={10}>
-                <NestedTreemap data={dynamicData} maxDepth={3}/>
-            </Box>
+            <NestedTreemap data={dynamicData} maxDepth={3}/>
             <HStack justify="space-between" align="flex-start" width="100%">
                 <VStack flex="1" align="stretch">
                     <Text size="md">Scenario(s) are:</Text>
