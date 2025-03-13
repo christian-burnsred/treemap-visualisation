@@ -108,7 +108,7 @@ const NestedTreemap = ({
                 .attr("viewBox", [0, -headerHeight, width, height + headerHeight])
                 .attr("width", "100%")
                 .attr("height", "100%")
-                .style("font", "10px sans-serif");
+                .style("font", "14px arial");
 
             // Add the main title group
             const titleGroup = svg.append("g")
@@ -217,7 +217,7 @@ const NestedTreemap = ({
             .attr("viewBox", [0, -headerHeight, width, height + headerHeight])
             .attr("width", "100%")
             .attr("height", "100%")
-            .style("font", "12px sans-serif");
+            .style("font", "14px arial");
 
         // Add the main title group
         const titleGroup = svg.append("g")
@@ -228,7 +228,7 @@ const NestedTreemap = ({
         titleGroup.append("text")
             .attr("x", 0)
             .attr("y", 15)
-            .attr("font-size", "18px")
+            .attr("font-size", "24px")
             .attr("font-weight", "bold")
             .attr("fill", HIGHLIGHT_COLOR)
             .attr("class", "main-title")
@@ -248,7 +248,7 @@ const NestedTreemap = ({
                 pathContainer.append("text")
                     .attr("x", 0)
                     .attr("y", 0)
-                    .attr("font-size", "12px")
+                    .attr("font-size", "14px")
                     .attr("fill", "#666")
                     .attr("font-style", "italic")
                     .text("Click on a node to navigate the model or hover on the node to show its category");
@@ -291,7 +291,7 @@ const NestedTreemap = ({
                     .attr("y", 0)
                     .attr("fill", "#666")
                     .attr("text-decoration", "underline")
-                    .attr("font-size", "12px")
+                    .attr("font-size", "14px")
                     .text(i === 0 ? ancestor.data.name : ancestor.data.name)
                     .attr("cursor", "pointer")
                     .on("mouseover", function () {
@@ -313,7 +313,7 @@ const NestedTreemap = ({
                     const separator = pathContainer.append("text")
                         .attr("x", xOffset)
                         .attr("y", 0)
-                        .attr("font-size", "12px")
+                        .attr("font-size", "14px")
                         .attr("fill", "#666")
                         .text("\u00A0/\u00A0"); // Space around separator
 

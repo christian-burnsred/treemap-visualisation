@@ -186,7 +186,7 @@ const DataVisualisationScreen = () => {
     // const dynamicData = sampleData
 
     return (
-        <Box p={4} width="90vw">
+        <Box p={4} width="90vw" maxWidth={"1120px"}>
             <NestedTreemap data={dynamicData} maxDepth={3}/>
             <HStack justify="space-between" align="flex-start" width="100%">
                 <VStack flex="1" align="stretch">
